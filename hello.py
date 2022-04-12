@@ -5,18 +5,56 @@ from datetime import datetime
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
+from pathlib import Path
+from flask_sqlalchemy import SQLAlchemy
 
+
+basedir = Path(__file__).parent.resolve()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'open sesame'
+app.config['SECRET_KEY'] = 'my hard to guess string'
+app.config['SQLALCHEMY_DATABASE_URI'] = \
+    'sqlite:///' + str(Path(basedir, 'dev_db.sqlite'))
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 bootstrap = Bootstrap(app)
 moment = Moment(app)
+db = SQLAlchemy(app)
+
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    users = db.relationship('User', backref='role')
+
+    def __repr__(self):
+        return f'<Role {self.name}'
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, index=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
+    def __repr__(self):
+        return f'<User {self.username}'
 
 
 class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -33,17 +71,3 @@ def index():
                            name=session.get('name'),
                            current_time=datetime.utcnow())
 
-
-@app.route('/user/<name>')
-def user(name):
-    return render_template('user.html', name=name)
-
-
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
-
-@app.errorhandler(500)
-def internal_server_error(e):
-    return render_template('500.html'), 500
