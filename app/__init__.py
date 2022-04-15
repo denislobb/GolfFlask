@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask
 from flask_bootstrap import Bootstrap
 from flask_mail import Mail
 from flask_moment import Moment
@@ -25,4 +25,3 @@ def create_app(config_name):
     app.register_blueprint(main_blueprint)
 
     return app
-
