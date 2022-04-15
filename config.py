@@ -13,7 +13,7 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     GOLFER_MAIL_SUBJECT_PREFIX = '[Golfer]'
     GOLFER_MAIL_SENDER = 'Golfer Admin <Golfer@example.com>'
-    GOLFER_ADMIN = os.environ.get('Golfer_ADMIN')
+    GOLFER_ADMIN = os.environ.get('GOLFER_ADMIN')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     @staticmethod
