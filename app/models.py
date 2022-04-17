@@ -55,7 +55,7 @@ class User(UserMixin, db.Model):
             data = s.loads(token, salt='confirm_email', max_age=max_age)
         except:
             return False
-        if data != self.id:
+        if data.get('confirm') != self.id:
             return False
         self.confirmed = True
         db.session.add(self)
