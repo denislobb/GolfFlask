@@ -47,12 +47,12 @@ class User(UserMixin, db.Model):
 
     def generate_confirmation_token(self):
         s = Serializer(current_app.config['SECRET_KEY'])
-        return s.dumps(self.id, salt='activate')
+        return s.dumps({'confirm': self.id}, salt='confirm_email')
 
-    def confirm(self, token, expiration=3600):
+    def confirm(self, token, max_age=3600):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            data = s.loads(token, salt='activate', max_age=expiration)
+            data = s.loads(token, salt='confirm_email', max_age=max_age)
         except:
             return False
         if data != self.id:
@@ -61,3 +61,41 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         return True
 
+    def generate_reset_token(self):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        return s.dumps({'reset': self.id}, salt='reset_password')
+
+    @staticmethod
+    def reset_password(token, new_password, max_age=3600):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token, salt='reset_password', max_age=max_age)
+        except:
+            return False
+        user = User.query.get(data.get('reset'))
+        if user is None:
+            return False
+        user.password = new_password
+        db.session.add(user)
+        return True
+
+    def generate_email_change_token(self, new_email, ):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        return s.dumps({'change_email': self.id, 'new_email': new_email}, salt='change_email')
+
+    def change_email(self, token, max_age=3600):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token, salt='change_email', max_age=max_age)
+        except:
+            return False
+        if data.get('change_email') != self.id:
+            return False
+        new_email = data.get('new_email')
+        if new_email is None:
+            return False
+        if self.query.filter_by(email=new_email).first() is not None:
+            return False
+        self.email = new_email
+        db.session.add(self)
+        return True
