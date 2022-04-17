@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import render_template, session, redirect, url_for, flash, current_app
 from .. import db
 from ..models import User
-from ..email import send_mail
+from ..email import send_email
 from . import main
 from .forms import NameForm
 
@@ -18,7 +18,7 @@ def index():
             db.session.commit()
             session['known'] = False
             if current_app.config['GOLFER_ADMIN']:
-                send_mail(current_app.config['GOLFER_ADMIN'], 'New User',
+                send_email(current_app.config['GOLFER_ADMIN'], 'New User',
                           'mail/new_user', user=user)
         else:
             session['known'] = True
