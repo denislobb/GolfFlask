@@ -47,12 +47,15 @@ class User(UserMixin, db.Model):
 
     def generate_confirmation_token(self):
         s = Serializer(current_app.config['SECRET_KEY'])
-        return s.dumps({'confirm': self.id}, salt='confirm_email')
+        return s.dumps({'confirm': self.id},
+                       salt=current_app.config['SECURITY_PASSWORD_SALT'])
 
-    def confirm(self, token, max_age=3600):
+    def confirm(self, token, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            data = s.loads(token, salt='confirm_email', max_age=max_age)
+            data = s.loads(token,
+                           salt=current_app.config['SECURITY_PASSWORD_SALT'],
+                           max_age=expiration)
         except:
             return False
         if data.get('confirm') != self.id:
@@ -63,13 +66,16 @@ class User(UserMixin, db.Model):
 
     def generate_reset_token(self):
         s = Serializer(current_app.config['SECRET_KEY'])
-        return s.dumps({'reset': self.id}, salt='reset_password')
+        return s.dumps({'reset': self.id},
+                       salt=current_app.config['SECURITY_PASSWORD_SALT'])
 
     @staticmethod
-    def reset_password(token, new_password, max_age=3600):
+    def reset_password(token, new_password, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            data = s.loads(token, salt='reset_password', max_age=max_age)
+            data = s.loads(token,
+                           salt=current_app.config['SECURITY_PASSWORD_SALT'],
+                           max_age=expiration)
         except:
             return False
         user = User.query.get(data.get('reset'))
@@ -81,12 +87,15 @@ class User(UserMixin, db.Model):
 
     def generate_email_change_token(self, new_email, ):
         s = Serializer(current_app.config['SECRET_KEY'])
-        return s.dumps({'change_email': self.id, 'new_email': new_email}, salt='change_email')
+        return s.dumps({'change_email': self.id, 'new_email': new_email},
+                       salt=current_app.config['SECURITY_PASSWORD_SALT'])
 
-    def change_email(self, token, max_age=3600):
+    def change_email(self, token, expiration=3600):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            data = s.loads(token, salt='change_email', max_age=max_age)
+            data = s.loads(token,
+                           salt=current_app.config['SECURITY_PASSWORD_SALT'],
+                           max_age=expiration)
         except:
             return False
         if data.get('change_email') != self.id:

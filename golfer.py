@@ -3,6 +3,9 @@ import click
 from flask_migrate import Migrate
 from app import create_app, db
 from app.models import User, Role
+# from dotenv import load_dotenv
+#
+# load_dotenv()   # take environment variables from .env.
 
 app = create_app(os.getenv('FLASK_ENV') or 'default')
 migrate = Migrate(app, db)
