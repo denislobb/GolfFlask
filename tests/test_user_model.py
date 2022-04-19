@@ -58,7 +58,7 @@ class UserModelTestCase(unittest.TestCase):
         db.session.add(u)
         db.session.commit()
         token = u.generate_confirmation_token()
-        time.sleep(2)
+        time.sleep(5)
         self.assertFalse(u.confirm(token, expiration=1))
 
     def test_valid_reset_token(self):
