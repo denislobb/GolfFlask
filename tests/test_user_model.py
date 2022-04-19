@@ -77,7 +77,6 @@ class UserModelTestCase(unittest.TestCase):
         self.assertFalse(User.reset_password(token + 'a', 'horse'))
         self.assertTrue(u.verify_password('cat'))
 
-
     def test_valid_email_change_token(self):
         u = User(email='john@example.com', password='cat')
         db.session.add(u)
