@@ -8,14 +8,6 @@ from . import db, login_manager
 # import app
 
 
-class Permission:
-    FOLLOW = 1  # Follow users
-    COMMENT = 2  # Comment on posts made by others
-    WRITE = 4  # Write articles
-    MODERATE = 8  # Moderate comments made by others
-    ADMIN = 16  # Administration Access
-
-
 event_course = db.Table('event_course',
                         db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
                         db.Column('course_id', db.Integer, db.ForeignKey('courses.id'))
@@ -25,6 +17,14 @@ user_event = db.Table('user_event',
                                db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
                                db.Column('event_id', db.Integer, db.ForeignKey('events.id'))
                                )
+
+
+class Permission:
+    FOLLOW = 1  # Follow users
+    COMMENT = 2  # Comment on posts made by others
+    WRITE = 4  # Write articles
+    MODERATE = 8  # Moderate comments made by others
+    ADMIN = 16  # Administration Access
 
 
 class Role(db.Model):
@@ -90,6 +90,11 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(64))
     location = db.Column(db.String(64))
     about_me = db.Column(db.Text())
+    golflink = db.Column(db.Integer, unique=True, index=True)
+    handicap = db.Column(db.Float)
+    handicap_updated = db.Column(db.DateTime(), default=datetime.utcnow)
+    mobile = db.Column(db.String(12))
+    date_of_birth = db.Column(db.DateTime())
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     events = db.relationship('Event',
@@ -202,6 +207,7 @@ class AnonymousUser(AnonymousUserMixin):
     def is_administrator(self):
         return False
 
+
 login_manager.anonymous_user = AnonymousUser
 
 
@@ -244,12 +250,12 @@ class Course(db.Model):
 class Hole(db.Model):
     __tablename__ = 'holes'
     id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False, index=True)
     hole_number = db.Column(db.Integer, nullable=False, index=True)
-    length = db.Column(db.Integer)
-    par = db.Column(db.Integer)
-    hcap_index = db.Column(db.Integer)
-    match_index = db.Column(db.Integer)
-    course = db.Column(db.Integer, db.ForeignKey('courses.id'))
+    length = db.Column(db.Integer, nullable=False)
+    par = db.Column(db.Integer, nullable=False)
+    hcap_index = db.Column(db.Integer, nullable=False)
+    match_index = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
         return f"<Hole(hole_number={self.hole_number}, " \
