@@ -1,3 +1,4 @@
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer as Serializer
 from flask import current_app
@@ -7,17 +8,23 @@ from . import db, login_manager
 # import app
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
 class Permission:
-    FOLLOW = 1      # Follow users
-    COMMENT = 2     # Comment on posts made by others
-    WRITE = 4       # Write articles
-    MODERATE = 8    # Moderate comments made by others
-    ADMIN = 16      # Administration Access
+    FOLLOW = 1  # Follow users
+    COMMENT = 2  # Comment on posts made by others
+    WRITE = 4  # Write articles
+    MODERATE = 8  # Moderate comments made by others
+    ADMIN = 16  # Administration Access
+
+
+event_course = db.Table('event_course',
+                        db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
+                        db.Column('course_id', db.Integer, db.ForeignKey('courses.id'))
+                        )
+
+user_event = db.Table('user_event',
+                               db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+                               db.Column('event_id', db.Integer, db.ForeignKey('events.id'))
+                               )
 
 
 class Role(db.Model):
@@ -54,7 +61,6 @@ class Role(db.Model):
             db.session.add(role)
         db.session.commit()
 
-
     def add_permission(self, perm):
         if not self.has_permission(perm):
             self.permissions += perm
@@ -81,6 +87,15 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     confirmed = db.Column(db.Boolean, default=False)
+    name = db.Column(db.String(64))
+    location = db.Column(db.String(64))
+    about_me = db.Column(db.Text())
+    member_since = db.Column(db.DateTime(), default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+    events = db.relationship('Event',
+                             secondary=user_event,
+                             backref=db.backref('users', lazy='dynamic'),
+                             lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -89,7 +104,6 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(name='Administrator').first()
             if self.role is None:
                 self.role = Role.query.filter_by(default=True).first()
-
 
     @property
     def password(self):
@@ -172,8 +186,14 @@ class User(UserMixin, db.Model):
     def is_administrator(self):
         return self.can(Permission.ADMIN)
 
+    def ping(self):
+        self.last_seen = datetime.utcnow()
+        db.session.add(self)
+        db.session.commit()
+
     def __repr__(self):
         return f'<User {self.username}'
+
 
 class AnonymousUser(AnonymousUserMixin):
     def can(self, permissions):
@@ -188,3 +208,51 @@ login_manager.anonymous_user = AnonymousUser
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+class Event(db.Model):
+    __tablename__ = 'events'
+    id = db.Column(db.Integer, primary_key=True)
+    event_name = db.Column(db.String(64), index=True)
+    date = db.Column(db.DateTime, index=True, default=datetime.now)
+    start_time = db.Column(db.DateTime, default=datetime.now)
+    scoring_format = db.Column(db.String(64), default="Stroke")
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
+
+    def __repr__(self):
+        return f"<Event(event_name={self.event_name}, event_date={self.date}, scoring_format={self.scoring_format}"
+
+
+class Course(db.Model):
+    __tablename__ = 'courses'
+    id = db.Column(db.Integer, primary_key=True)
+    course_name = db.Column(db.String(64), unique=True, index=True)
+    tee_box = db.Column(db.String(64))
+    slope_rating = db.Column(db.Integer)
+    scratch_rating = db.Column(db.Integer)
+    course_par = db.Column(db.Integer)
+    holes = db.relationship('Hole', backref='course', lazy='dynamic')
+    events = db.relationship('Event',
+                             secondary=event_course,
+                             backref=db.backref('course', lazy='dynamic'),
+                             lazy='dynamic')
+
+    def __repr__(self):
+        return f"<Course(course_name={self.course_name}, tee-box={self.tee_box}, slope_rating={self.slope_rating}"
+
+
+class Hole(db.Model):
+    __tablename__ = 'holes'
+    id = db.Column(db.Integer, primary_key=True)
+    hole_number = db.Column(db.Integer, nullable=False, index=True)
+    length = db.Column(db.Integer)
+    par = db.Column(db.Integer)
+    hcap_index = db.Column(db.Integer)
+    match_index = db.Column(db.Integer)
+    course = db.Column(db.Integer, db.ForeignKey('courses.id'))
+
+    def __repr__(self):
+        return f"<Hole(hole_number={self.hole_number}, " \
+               f"length={self.length}, par={self.par}, hcap_index={self.hcap_index}"
+
+

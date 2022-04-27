@@ -1,7 +1,7 @@
 import unittest
 import time
+from datetime import datetime
 from app import create_app, db
-from app.models import User
 from app.models import User, AnonymousUser, Role, Permission
 
 
@@ -138,3 +138,19 @@ class UserModelTestCase(unittest.TestCase):
         self.assertFalse(u.can(Permission.WRITE))
         self.assertFalse(u.can(Permission.MODERATE))
         self.assertFalse(u.can(Permission.ADMIN))
+
+    def test_timestamp(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        self.assertTrue((datetime.utcnow() - u.member_since).total_seconds() < 3)
+        self.assertTrue((datetime.utcnow() - u.last_seen).total_seconds() < 3)
+
+    def test_ping(self):
+        u = User(password='cat')
+        db.session.add(u)
+        db.session.commit()
+        time.sleep(2)
+        last_seen_before = u.last_seen
+        u.ping()
+        self.assertTrue(u.last_seen > last_seen_before)
